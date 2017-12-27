@@ -1,0 +1,18 @@
+原始日志test.log
+61.148.244.188    -        -    [18/Sep/2013:07:10:50   +0000]   "GET     /hadoop-hive-intro/     HTTP/1.1"     200     14764       "-"    "Mozilla/5.0    (Linux; U; Android 4.1.2; zh-cn; GT-I9300 Build/JZO54K)    AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 Mobile Safari/534.30 V1_AND_SQ_4.2.1_3_YYB_D"
+   来访ip		用户名   未知		 来访时间            未知     方法       访问页面               http头     状态码    字节数   来访url   浏览器类型
+
+   
+预处理后日志wash
+true61.148.244.188   -      2013-09-18 07:10:50/hadoop-hive-intro/200       14764     "-"        "Mozilla/5.0(Linux;U;Android4.1.2;zh-cn;GT-I9300Build/JZO54K)AppleWebKit/534.30(KHTML,likeGecko)Version/4.0MobileSafari/534.30V1_AND_SQ_4.2.1_3_YYB_D"
+valid     remote_addr  remote_user       time_local             request           status   body_bytes_sent  http_referer     http_user_agent
+
+
+pageviews表
+50f74ac5-ea60-4618-ae23-e842046ea5ee1.80.249.223-2013-09-18 07:57:33/hadoop-hive-intro/160"http://www.google.com.hk/url?sa=t&rct=j&q=hive%E7%9A%84%E5%AE%89%E8%A3%85&source=web&cd=2&ved=0CC4QFjAB&url=%68%74%74%70%3a%2f%2f%62%6c%6f%67%2e%66%65%6e%73%2e%6d%65%2f%68%61%64%6f%6f%70%2d%68%69%76%65%2d%69%6e%74%72%6f%2f&ei=5lw5Uo-2NpGZiQfCwoG4BA&usg=AFQjCNF8EFxPuCMrm7CvqVgzcBUzrJZStQ&bvm=bv.52164340,d.aGc&cad=rjt""Mozilla/5.0(WindowsNT5.2;rv:23.0)Gecko/20100101Firefox/23.0"14764200
+		session                            ip         昵称         访问时间           访问页面        step 停留      来访url																																																																															浏览器类型												   资源大小	状态码			
+
+
+visit表
+020fdffa-bd53-428c-bb72-d5298c0c910b211.155.231.1802013-09-18 07:54:422013-09-18 07:54:42/hadoop-mahout-roadmap//hadoop-mahout-roadmap/"http://f.dataguru.cn/thread-177375-1-1.html"1
+           session                           ip              进入该session时间   离开该session时间          进入页面                  离开页面                           来访url                        此次session访问页面数
