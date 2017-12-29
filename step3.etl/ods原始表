@@ -1,0 +1,92 @@
+#建库
+create database shizhan;
+use shizhan;
+
+#建表:
+
+drop table if exists ods_weblog_origin;
+create table ods_weblog_origin(
+valid string,
+remote_addr string,
+remote_user string,
+time_local string,
+request string,
+status string,
+body_bytes_sent string,
+http_referer string,
+http_user_agent string)
+partitioned by (datestr string)
+row format delimited
+fields terminated by '\001';
+
+drop table if exists ods_click_pageviews;
+create table ods_click_pageviews(
+Session string,
+remote_addr string,
+time_local string,
+request string,
+visit_step string,
+page_staylong string,
+http_referer string,
+http_user_agent string,
+body_bytes_sent string,
+status string)
+partitioned by (datestr string)
+row format delimited
+fields terminated by '\001';
+
+drop table if exist click_stream_visit;
+create table click_stream_visit(
+session     string,
+remote_addr string,
+inTime      string,
+outTime     string,
+inPage      string,
+outPage     string,
+referal     string,
+pageVisits  int)
+partitioned by (datestr string);
+
+
+# 导入数据
+load data local inpath '/home/hadoop/wash' into table ods_weblog_origin partition(datestr='2013-09-18');
+load data local inpath '/home/hadoop/pageviews' into table ods_click_pageviews partition(datestr='2013-09-18');
+load data local inpath '/home/hadoop/visit' into table click_stream_visit partition(datestr='2013-09-18');
+
+# 宽表
+create table ods_weblog_detail(
+valid           string,
+remote_addr     string,
+remote_user     string,
+time_local      string,
+daystr          string,
+timestr         string,
+month           string,
+day             string,
+hour            string,
+request         string,
+status          string,
+body_bytes_sent string,
+http_referer    string,
+ref_host        string,
+ref_path        string,
+ref_query       string,
+ref_query_id    string,
+http_user_agent string
+)
+partitioned by(datestr string);
+
+
+insert into table shizhan.ods_weblog_detail partition(datestr='2013-09-18')
+select c.valid,c.remote_addr,c.remote_user,c.time_local,
+substring(c.time_local,0,10) as daystr,
+substring(c.time_local,12) as tmstr,
+substring(c.time_local,6,2) as month,
+substring(c.time_local,9,2) as day,
+substring(c.time_local,11,3) as hour,
+c.request,c.status,c.body_bytes_sent,c.http_referer,c.ref_host,c.ref_path,c.ref_query,c.ref_query_id,c.http_user_agent
+from
+(SELECT 
+a.valid,a.remote_addr,a.remote_user,a.time_local,
+a.request,a.status,a.body_bytes_sent,a.http_referer,a.http_user_agent,b.ref_host,b.ref_path,b.ref_query,b.ref_query_id 
+FROM shizhan.ods_weblog_origin a LATERAL VIEW parse_url_tuple(regexp_replace(http_referer, "\"", ""), 'HOST', 'PATH','QUERY', 'QUERY:id') b as ref_host, ref_path, ref_query, ref_query_id) c

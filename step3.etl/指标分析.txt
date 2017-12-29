@@ -1,0 +1,261 @@
+# dw_pvs_hour 计算每个小时的pv（一台电脑为一个uv，一次页面访问为一个pv）
+drop table if exists dw_pvs_hour;
+create table dw_pvs_hour(month string,day string,hour string,pvs bigint) partitioned by(datestr string);
+insert into table dw_pvs_hour partition(datestr='2013-09-18')
+select a.month as month,a.day as day,a.hour as hour,count(1) as pvs
+from ods_weblog_detail a
+where a.datestr='2013-09-18' group by a.month,a.day,a.hour;
+
+
+# dw_pvs_day 计算每天的pv
+drop table if exists dw_pvs_day;
+create table dw_pvs_day(month string,day string,pvs bigint);
+insert into table dw_pvs_day
+select a.month as month,a.day as day,count(1) as pvs
+from ods_weblog_detail a
+group by a.month,a.day;
+
+
+# dw_avgpv_user_d 每天人均浏览页数---所有页面valid+unvalid
+drop table if exists dw_avgpv_user_d;
+create table dw_avgpv_user_d(day string,avgpv string);
+insert into table dw_avgpv_user_d
+select a.day as day,sum(a.pvs)/count(remote_addr) as avgpv
+from
+(select remote_addr,day,count(1) as pvs from ods_weblog_detail group by day,remote_addr) a
+group by day;
+
+
+# dw_avgpv_user_h 每小时人均浏览页数---所有页面valid+unvalid
+drop table if exists dw_avgpv_user_h;
+create table dw_avgpv_user_h(day string,hour string,avgpv string);
+insert into table dw_avgpv_user_h
+select a.day as day,a.hour as hour,sum(a.pvs)/count(remote_addr) as avgpv
+from
+(select remote_addr,day,hour,count(1) as pvs from ods_weblog_detail group by day,hour,remote_addr) a
+group by day,hour;
+
+
+# dw_pvs_referer_h 以小时为维度，统计每小时每个refer_url的pvs
+drop table if exists dw_pvs_referer_h;
+create table dw_pvs_referer_h(referer_url string,referer_host string,month string,day string,hour string,pv_referer_cnt bigint);
+insert into table dw_pvs_referer_h
+select http_referer,ref_host,month,day,hour,count(1) as pv_referer_cnt from ods_weblog_detail
+group by http_referer,ref_host,month,day,hour 
+having ref_host is not null
+order by day asc,hour asc,pv_referer_cnt desc;
+
+
+# dw_ref_host_visit_cnts_h 以小时为维度，统计每小时每个域名ref_host的pvs
+drop table if exists dw_ref_host_visit_cnts_h;
+create table dw_ref_host_visit_cnts_h(ref_host string,month string,day string,hour string,ref_host_cnts bigint);
+insert into table dw_ref_host_visit_cnts_h
+select ref_host,month,day,hour,count(1) as ref_host_cnts from ods_weblog_detail
+group by ref_host,month,day,hour 
+having ref_host is not null
+order by day asc,hour asc,ref_host_cnts desc;
+
+
+# dw_pvs_refhost_topn_h  计算每小时top3的ref_host
+drop table if exists dw_pvs_refhost_topn_h;
+create table dw_pvs_refhost_topn_h(hour string,toporder string,ref_host string,ref_host_cnts string);
+insert into table dw_pvs_refhost_topn_h
+select t.hour,t.od,t.ref_host,t.ref_host_cnts from
+(select ref_host,ref_host_cnts,concat(month,day,hour) as hour,
+row_number() over (partition by concat(month,day,hour) order by ref_host_cnts desc) as od
+from dw_ref_host_visit_cnts_h) t where od<=3;
+
+
+# dw_pvs_d 计算每天受访页面request的top10页面
+drop table if exists dw_pvs_d;
+create table dw_pvs_d(day string,url string,pvs string);
+insert into table dw_pvs_d
+select '2013-09-18',a.request,a.request_counts from 
+(select request as request,count(request) as request_counts from ods_weblog_detail
+where day='18'
+group by request
+having request is not null)a
+order by a.request_counts desc limit 10;
+
+
+# dw_user_dstc_ip_h 计算每个小时每个访客产生的pvCnts
+drop table if exists dw_user_dstc_ip_h;
+create table dw_user_dstc_ip_h(hour string,remote_addr string,pvs bigint);
+insert into table dw_user_dstc_ip_h
+select concat(month,day,hour) as hour,remote_addr,count(1) as pvs
+from ods_weblog_detail
+group by concat(month,day,hour),remote_addr;
+
+
+# dw_dstc_ip_h 计算每小时产生的独立访客总数
+drop table if exists dw_dstc_ip_h;
+create table dw_dstc_ip_h(hour string,dstc_ip_cnts int);
+insert into table dw_dstc_ip_h
+select hour,count(1) as dstc_ip_cnts from dw_user_dstc_ip_h
+group by hour;
+
+
+# dw_user_dstc_ip_month_top10  统计这两天的访问次数topn的访客
+drop table if exists dw_user_dstc_ip_month_top10;
+create table dw_user_dstc_ip_month_top10(remote_addr string,pvs int);
+insert into table dw_user_dstc_ip_month_top10
+select remote_addr,count(1) as pvs from ods_weblog_detail
+group by remote_addr
+order by pvs desc limit 10;
+
+
+# dw_user_dsct_history 每日新访客，创建一个去重访客累积表，然后将每日访客对比累积表
+drop table if exists  dw_user_dsct_history;
+create table  dw_user_dsct_history(day string,ip string);
+insert into dw_user_dsct_history
+select tmp.day as day,tmp.today_addr as ip from
+(
+select today.day as day,today.remote_addr as today_addr,old.ip as old_addr
+from
+(select distinct remote_addr as remote_addr,"2013-09-18" as day from ods_weblog_detail)today
+left outer join dw_user_dsct_history old
+on today.remote_addr=old.ip
+)tmp
+where tmp.old_addr is null;
+insert into dw_user_dsct_history
+select tmp.day as day,tmp.today_addr as ip from
+(
+select today.day as day,today.remote_addr as today_addr,old.ip as old_addr
+from
+(select distinct remote_addr as remote_addr,"2013-09-19" as day from ods_weblog_detail)today
+left outer join dw_user_dsct_history old
+on today.remote_addr=old.ip
+)tmp
+where tmp.old_addr is null;
+
+
+# dw_user_returning 回头访客 在visit表中出现在两个session中的remote_addr
+drop table if exists dw_user_returning;
+create table dw_user_returning(remote_addr string,acc_cnt string);
+insert into table dw_user_returning
+select tmp.remote_addr,tmp.acc_cnt from
+(select remote_addr,count(1) as acc_cnt from click_stream_visit group by remote_addr) tmp 
+where tmp.acc_cnt>1;
+
+
+# dw_user_avg_session 人均访问频次---有效页面valid
+drop table if exists dw_user_avg_session;
+create table dw_user_avg_session(avg_acc string);
+insert into table dw_user_avg_session
+select sum(pageVisits)/count(distinct remote_addr) from click_stream_visit;
+
+
+# 关键路径转化率分析——漏斗模型  substr从1开始为第一个字符substr(pos,length)
+
+Step1、  /item%
+Step2、  /category
+Step3、  /index
+Step4、  /order
+
+1、查询每一个步骤的总访问人数
+create table dw_oute_numbs as
+select 'step1' as step,count(distinct remote_addr) as numbs from ods_click_pageviews where request like '/item%'
+union
+select 'step2' as step,count(distinct remote_addr) as numbs from ods_click_pageviews where request like '/category%'
+union
+select 'step3' as step,count(distinct remote_addr) as numbs from ods_click_pageviews where request like '/index%'
+union
+select 'step4' as step,count(distinct remote_addr) as numbs from ods_click_pageviews where request like '/order%'
+
+结果:
+step1   10
+step2    5
+step3    2
+step4    1
+ 
+2、查询每一步骤相对于路径起点人数的比例
+select tmp.rrstep,tmp.rrnumbs/tmp.rnnumbs as radio
+from
+(select rn.step as rnstep,rn.numbs as rnnumbs,rr.step as rrstep,rr.numbs as rrnumbs from dw_oute_numbs rn inner join dw_oute_numbs rr)tmp
+where tmp.rnstep='step1';
+
+tmp表
+rnstep    rnnumbs     rrstep    rrnumbs
+step1       10         step1          10
+step1       10         step2           5
+step1       10         step3           2
+step1       10         step4           1
+step2        5		   step1          10
+step2        5         step2           5
+step2        5         step3           2
+step2        5         step4           1
+step3        2         step1          10
+step3        2         step2           5
+step3        2         step3           2
+step3        2         step4           1
+step4        1         step1          10
+step4        1         step2           5
+step4        1         step3           2
+step4        1         step4           1
+
+结果：
+tmp.rrstep     radio
+   step1		1.0
+   step2        0.5
+   step3        0.2
+   step4        0.1
+   
+
+3、查询每一步骤相对于上一步骤的漏出率
+select tmp.rrstep as rrstep,tmp.rrnumbs/tmp.rnnumbs as radio
+(select rn.step as rnstep,rn.numbs as rnnumbs,rr.step as rrstep,rr.numbs as rrnumbs from dw_oute_numbs rn inner join dw_oute_numbs rr)tmp
+where cast(substr(tmp.rnstep,5,1) as int)+1=cast(substr(tmp.rrstep,5,1) as int)
+
+tmp表
+rnstep    rnnumbs     rrstep    rrnumbs
+step1       10         step1          10
+step1       10         step2           5
+step1       10         step3           2
+step1       10         step4           1
+step2        5		   step1          10
+step2        5         step2           5
+step2        5         step3           2
+step2        5         step4           1
+step3        2         step1          10
+step3        2         step2           5
+step3        2         step3           2
+step3        2         step4           1
+step4        1         step1          10
+step4        1         step2           5
+step4        1         step3           2
+step4        1         step4           1
+
+结果:
+rrstep   ration
+step2      0.5
+step3      0.4
+step4      0.5
+
+4、将两张表汇总在一起
+select abs.step,abs.numbs,abs.ratio as abs_ratio,rel.ratio as rel_ratio
+from 
+(
+select tmp.rrstep as step,tmp.rrnumbs/tmp.rnnumbs as radio
+from
+(select rn.step as rnstep,rn.numbs as rnnumbs,rr.step as rrstep,rr.numbs as rrnumbs from dw_oute_numbs rn inner join dw_oute_numbs rr)tmp
+where tmp.rnstep='step1';
+) abs
+left outer join
+(
+select tmp.rrstep as step,tmp.rrnumbs/tmp.rnnumbs as radio
+(select rn.step as rnstep,rn.numbs as rnnumbs,rr.step as rrstep,rr.numbs as rrnumbs from dw_oute_numbs rn inner join dw_oute_numbs rr)tmp
+where cast(substr(tmp.rnstep,5,1) as int)+1=cast(substr(tmp.rrstep,5,1) as int)
+)
+on abs.step=rel.step
+
+
+
+
+
+
+
+
+
+
+
+
