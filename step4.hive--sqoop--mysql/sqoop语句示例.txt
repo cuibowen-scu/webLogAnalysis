@@ -1,0 +1,3 @@
+bin/sqoop export --connect jdbc:mysql://192.168.91.1/weblog --username root --password root --table each_hour_top3_refer_host --export-dir hdfs://shizhan:9000/user/hive/warehouse/shizhan.db/dw_pvs_refhost_topn_h/000000_0 --input-fields-terminated-by '\001'
+
+bin/sqoop export --connect jdbc:mysql://192.168.91.1/weblog --username root --password root --table each_hour_every_refer_counts --export-dir hdfs://shizhan:9000/user/hive/warehouse/shizhan.db/dw_ref_host_visit_cnts_h/000000_0 --input-fields-terminated-by '\001'
