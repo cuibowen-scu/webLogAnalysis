@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"> 
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>webLogAnalysis</title>
+
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css">
+<link rel="stylesheet" href="dist/sidebar-menu.css">
+<style type="text/css">
+.main-sidebar{
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  min-height: 100%;
+  width: 230px;
+  z-index: 810;
+  background-color: #222d32;
+ }
+</style>
+  <meta charset="utf-8">
+  <title>game_project</title>
+  <!-- 引入 echarts.js -->
+  <script src="echarts.min.js"></script>
+</head>
+<body>
+<aside class="main-sidebar">
+<section  class="sidebar">
+    <ul class="sidebar-menu">
+      <li class="header">MAIN NAVIGATION</li>
+      <li class="treeview">
+        <a href="#">
+          <i class="fa fa-dashboard"></i> <span>网站概况</span> <i class="fa fa-angle-left pull-right"></i>
+        </a>
+        <ul class="treeview-menu">
+          <li><a href="each_day_new_ip.html"><i class="fa fa-circle-o"></i> 每日新增用户</a></li>
+          <li><a href="each_hour_ip_count.html"><i class="fa fa-circle-o"></i> 每小时访问ip数</a></li>
+          <li><a href="step_radio.html"><i class="fa fa-circle-o"></i> 转化率</a></li>
+          <li><a href="day_top10_request_pages.html"><i class="fa fa-circle-o"></i> 全天访问页面top10</a></li>
+          <li><a href="top10_access_users.html"><i class="fa fa-circle-o"></i> 访问次数top10用户</a></li>
+          
+
+        </ul>
+      </li>
+      <li class="treeview">
+        <a href="#">
+          <i class="fa fa-files-o"></i>
+          <span>流量分析</span>
+          <span class="label label-primary pull-right">4</span>
+        </a>
+        <ul class="treeview-menu" style="display: none;">
+          
+          <li><a href="each_day_pvs.html"><i class="fa fa-circle-o"></i> 每日访问页面总次数</a></li>
+         
+          <li><a href="each_hour_pvs.html"><i class="fa fa-circle-o"></i> 每小时访问页面总次数</a></li>
+          <li><a href="each_day_avg_user_pvs.html"><i class="fa fa-circle-o"></i> 每日人均访问页面次数</a></li>
+           <li><a href="each_hour_avg_user_pvs.html"><i class="fa fa-circle-o"></i> 每小时人均访问页面数</a></li>
+        </ul>
+      </li>
+     
+      <li class="treeview">
+        <a href="#">
+          <i class="fa fa-pie-chart"></i>
+          <span>来源分析</span>
+          <i class="fa fa-angle-left pull-right"></i>
+        </a>
+        <ul class="treeview-menu">
+        <li><a href="each_hour_top3_refer_host.html"><i class="fa fa-circle-o"></i> 每小时来源top3</a></li>
+          <li><a href="each_hour_every_refer_counts.html"><i class="fa fa-circle-o"></i> 每小时各来源数</a></li>
+          
+
+
+        </ul>
+      </li>
+      <li class="treeview">
+        <a href="#">
+          <i class="fa fa-laptop"></i>
+          <span>访客分析</span>
+          <i class="fa fa-angle-left pull-right"></i>
+        </a>
+        <ul class="treeview-menu">
+          <li><a href="returning_user.html"><i class="fa fa-circle-o"></i> 回头访客</a></li>
+
+          
+        </ul>
+      </li>
+      
+      
+      <li><a href="index.html"><i class="fa fa-book"></i> <span>项目架构</span></a></li>
+      <br><br>
+      <li class="header">LABELS</li>
+      <li><a href="http://www.forgiveyou.me"><i class="fa fa-circle-o text-red"></i> <span>Home</span></a></li>
+      <li><a href="https://github.com/alwaysbeloved/webLogAnalysis"><i class="fa fa-circle-o text-yellow"></i> <span>Github</span></a></li>
+      <li><a href="info.html"><i class="fa fa-circle-o text-aqua"></i> <span>Info</span></a></li>
+    </ul>
+  </section>
+ </aside>
+
+<script src="js/jquery-2.1.1.min.js" type="text/javascript"></script>
+<script src="./dist/sidebar-menu.js"></script>
+<script>
+$.sidebarMenu($('.sidebar-menu'))
+</script>
+
+
+
+
+
+
+
+
+
+
+<br><br><br>
+    <!-- 为ECharts准备一个具备大小（宽高）的Dom -->
+    <div id="main" style="width: 1000px;height:600px; margin-left: 250px" >
+    <script type="text/javascript">
+        // 基于准备好的dom，初始化echarts实例
+        var myChart = echarts.init(document.getElementById('main'));
+
+        // 指定图表的配置项和数据
+        option = {
+    title: {
+        text: '每小时ip数',
+        subtext: '维度：小时'
+    },
+    tooltip: {
+        trigger: 'axis'
+    },
+    legend: {
+        data:['dnu']
+    },
+    toolbox: {
+        show: true,
+        feature: {
+            dataZoom: {
+                yAxisIndex: 'none'
+            },
+            dataView: {readOnly: false},
+            magicType: {type: ['line', 'bar']},
+            restore: {},
+            saveAsImage: {}
+        }
+    },
+    xAxis:  {
+        type: 'category',
+        boundaryGap: false,
+        data: ['06','07','08','09','10','11','12','13','14','15','16','17','18','19','20','21','22','23','00','01','02','03','04','05','06']
+    },
+    yAxis: {
+        type: 'value',
+        axisLabel: {
+            formatter: '{value} '
+        }
+    },
+    series: [
+        {
+            name:'ip数',
+            type:'line',
+            data:[19,98,129,149,107,54,52,71,62,72,93,55,42,83,35,44,52,38,39,42,57,67,55,48,30],
+            markPoint: {
+                data: [
+                    {type: 'max', name: '最大值'},
+                    {type: 'min', name: '最小值'}
+                ]
+            },
+            markLine: {
+                data: [
+                    {type: 'average', name: '平均值'}
+                ]
+            }
+        },
+
+    ]
+};
+
+
+        // 使用刚指定的配置项和数据显示图表。
+        myChart.setOption(option);
+    </script>
+    </div>
+</body>
+</html>
